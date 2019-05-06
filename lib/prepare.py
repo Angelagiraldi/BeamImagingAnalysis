@@ -4,7 +4,9 @@ make_filelist: Scan raw files for needed data.
 make_trees: Create Beam Imaging trees from raw data.
 make_histograms: Create Beam Imaging histograms from created trees.
 """
-
+import re
+import pprint
+import json
 from os import listdir, stat
 from os.path import exists
 
@@ -130,8 +132,59 @@ def make_trees(
             trees[bcid].Fill()
     return trees
 
+def get_beamcorrection(
+    name, correctionsfile
+):
+    """Run over created corrections file and get beam-beam corrections.
+
+    trees: Dictionary of trees to be used for histogram creation (key unused).
+    correlationfile: Json file with the beam-beam corrections.
+
+    returns dictionary with beam corrections for a specific tree and the value of bcid.
+    """
+
+    num_beam, bunch = re.findall('\d+', name)
+    if "X" in name:
+        axis_beam = num_beam + 'X'
+    elif "Y" in name:
+        axis_beam = num_beam + 'Y'
+
+    corr = {}
+    with open(correctionsfile) as json_data:
+        data = json.load(json_data)
+        for Scan in data:
+            for dataScan in data[Scan]:
+                if dataScan['ScanName'] == axis_beam and dataScan['ScanPointNumber'] == 1:
+                    corr = data[Scan]
+
+    return corr, bunch
+
+
+def get_betacorrection(
+    name, betacorrectionsfile
+):
+    """Run over created corrections file and get dynamic beta corrections.
+
+    trees: Dictionary of trees to be used for histogram creation (key unused).
+    correlationfile: Json file with the beam-beam corrections.
+
+    returns dictionary with dynamic beta corrections for a specific tree and the value of bcid.
+    """
+
+    num_beam, bunch = re.findall('\d+', name)
+    if "X" in name:
+        axis_beam = num_beam + 'X'
+    elif "Y" in name:
+        axis_beam = num_beam + 'Y'
+
+    with open(betacorrectionsfile) as json_data:
+        data = json.load(json_data)
+
+    return data[axis_beam][bunch]
+
+
 def make_histograms(
-    trees, nbins, mintrk, scaling=1.0, verbose=False, extracond=None
+    trees, nbins, mintrk, scaling=1.0, verbose=False, extracond=None, beamcorrectionsfile=None, betacorrectionsfile=None
 ):
     """Run over created trees and select Beam Imaging data for histograms.
 
@@ -147,25 +200,58 @@ def make_histograms(
     else:
         extracond = ' && ({0})'.format(extracond)
     hists = {}
+
     for i, tree in enumerate(trees.itervalues()):
         name = 'hist_{0}'.format(tree.GetName())
         condition = 'vtx_nTrk>={0}{1}'.format(mintrk, extracond)
-
-        draw1 = 'vtx_y/{0}:vtx_x/{0}>>hnew{1}'.format(scaling, i)
+        hist2 = TH2F(name, name, nbins, -10.0, 10.0, nbins, -10.0, 10.0)
+        n1,n2 = 0,0
+        draw1 = '(vtx_y)/{0}:(vtx_x)/{0}>>hnew{1}'.format(scaling, i)
         n = tree.Draw(draw1, condition, 'goff')
         hist1 = gDirectory.Get('hnew{0}'.format(i))
-
         offx = round(hist1.GetMean(1), 2)
         offy = round(hist1.GetMean(2), 2)
         if verbose:
             print '<<< {0} entries with offset {1}, {2}'.format(n, offx, offy)
 
-        draw2 = 'vtx_y/{0}-{1}:vtx_x/{0}-{2}>>{3}' \
+        #Apply corrections for Beam-Beam effects
+        if beamcorrectionsfile and betacorrectionsfile:
+            treename = tree.GetName()
+            beamcorrections, bunch = get_beamcorrection(treename, beamcorrectionsfile)
+            betacorrections = get_betacorrection(treename, betacorrectionsfile)
+
+            for beamdata in beamcorrections:
+
+                for scan in range(19):
+                    if beamdata['ScanPointNumber']-1 != scan:
+                        continue
+                    for betadata in betacorrections:
+                        if betadata[0] == beamdata['ScanPointNumber']-1:
+                            betacorr = betadata[1]
+
+                    #Get the corrections according to the value of scanstep and bcid
+                    x_corr, y_corr = 0. , 0.
+                    for bcid in beamdata['corr_Xcoord']:
+                        if bunch == bcid:
+                            x_corr = beamdata['corr_Xcoord'][bcid]
+                            y_corr = beamdata['corr_Ycoord'][bcid]
+
+                    #Apply extraconditions for the scanstep value
+                    ScanPointcondition = '({0} && scanstep == {1})*{2}'.format(condition,scan, betacorr )
+
+                    #Draw corrected vtx_y:vtx_x shifted by the mean values
+                    draw2 = '(vtx_y+({4}/2))/{0}-{1}:(vtx_x+({5}/2))/{0}-{2}>>+{3}' \
+                            .format(scaling, offy, offx, name, y_corr, x_corr)
+                    tree.Draw(draw2, ScanPointcondition, 'goff')
+
+        else:
+
+            draw2 = 'vtx_y/{0}-{1}:vtx_x/{0}-{2}>>{3}' \
                 .format(scaling, offy, offx, name)
-        hist2 = TH2F(name, name, nbins, -10.0, 10.0, nbins, -10.0, 10.0)
-        tree.Draw(draw2, condition, 'goff')
+            tree.Draw(draw2, condition, 'goff')
 
         hists[name] = hist2
+
     return hists
 
 def make_vdmhistos(
@@ -187,7 +273,7 @@ def make_vdmhistos(
         name = 'hist_{0}'.format(tree.GetName())
         condition = 'vtx_nTrk>={0}'.format(mintrk)#' && scanstep>=2'
 
-        draw1 = '(vtx_y{2:+.8f}*scanstep)/{0}:(vtx_x{1:+.8f}*scanstep)/{0}>>hnew{3}' \
+        draw1 = '(vtx_y{2:+.8f}*scanstep)/{0}):(vtx_x{1:+.8f}*scanstep)/{0}>>hnew{3}' \
                 .format(scaling, -1.0*stepsize[0], -1.0*stepsize[1], i)
         n = tree.Draw(draw1, condition, 'goff')
         hist1 = gDirectory.Get('hnew{0}'.format(i))
