@@ -4,7 +4,7 @@ from sys import argv
 
 from lib.submit import QSubmitter as submit
 
-ma = 'knollejo@mail.desy.de'
+ma = 'angirald@mail.desy.de'
 mo = False
 number = 20 #100
 test = False
@@ -12,16 +12,13 @@ test = False
 # for shapeFitter, computeCorr, integrateResiduals
 switchConfignummodel = False
 configs = [
-    '6868_rereco_second',
-    '6868_rereco_second_verytight',
-    '6868_rereco_second_drift1',
-    '6868_rereco_second_drift2',
+    '4954_rereco_many_medium_nocorrections',
+    '4954_rereco_many_medium_onlyBeta',
+    '4954_rereco_many_medium_rightBeamCorrections',
+    '4954_rereco_many_medium_rightCorrections',
 ]
 modelversion = [
-    ('SupDG', 'v4'),
-    ('SupDG', 'v3'),
-    ('SupG', 'v2'),
-    ('SG', 'v1'), ('noCorr', 'v1'), ('DG', 'v1'), ('TG', 'v1'),
+    ('SupDG', 'v3')
 ]
 confignummodel = [
     ('6868_second', 2, 'TG', 'v1'),

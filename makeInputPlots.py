@@ -1,8 +1,8 @@
 import ROOT
 from lib.plot.plot import ColorBase
 ColorBase.kBird()
-tfile = ROOT.TFile.Open("/afs/cern.ch/user/a/angirald/workspace/CMSSW_10_3_2/src/BeamImagingAnalysis/beamimaging/Fill4954_rereco_2X.root")
-ttree = tfile.Get("Beam2MoveX_bunch872Add")
+tfile = ROOT.TFile.Open("/afs/cern.ch/user/a/angirald/workspace/CMSSW_10_3_2/src/BeamImagingAnalysis/beamimaging/Fill4954_rereco_1X.root")
+ttree = tfile.Get("Beam1MoveX_bunch872Add")
 text = ROOT.TLatex()
 text.SetNDC()
 text.SetTextFont(62)
@@ -17,8 +17,8 @@ for i in range(19):
     plot._ytitle = 'y [cm]'
     plot.draw()
     plot.SetLogz()
-    text.DrawLatex(0.15, 0.88, 'Scan 2X, step {}'.format(i))
+    text.DrawLatex(0.15, 0.88, 'Scan 1X, step {}'.format(i))
     plot.Update()
-    plot.SaveAs('Fill4954_rereco_2X_bcid872_step{}.png'.format(i))
+    plot.SaveAs('Fill4954_rereco_1X_bcid872_step{}.png'.format(i))
     plot.Close()
-print 'convert -delay 20 -loop 0 Fill4954_rereco_2Y_bcid872_step{0..18}.png Fill4954_rereco_2X_bcid872_allsteps.gif'
+print 'convert -delay 20 -loop 0 Fill4954_rereco_1X_bcid872_step{0..18}.png Fill4954_rereco_1X_bcid872_allsteps.gif'
