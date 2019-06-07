@@ -2,7 +2,8 @@
 
 make_filelist: Scan raw files for needed data.
 make_trees: Create Beam Imaging trees from raw data.
-make_histograms: Create Beam Imaging histograms from created trees.
+make_histograms_forbcid: Create Beam Imaging histograms from created trees for each bcid.
+make_histograms: Create Beam Imaging histograms from created trees summing over bcid.
 """
 import re
 import pprint
@@ -183,10 +184,10 @@ def get_betacorrection(
     return data[axis_beam][bunch]
 
 
-def make_histograms(
+def make_histograms_forbcid(
     trees, nbins, mintrk, scaling=1.0, verbose=False, extracond=None, beamcorrectionsfile=None, betacorrectionsfile=None
 ):
-    """Run over created trees and select Beam Imaging data for histograms.
+    """Run over created trees and select Beam Imaging data for histograms for each single bcid.
 
     trees: Dictionary of trees to be used for histogram creation (key unused).
     nbins: Number of bins in each dimension.
@@ -237,7 +238,7 @@ def make_histograms(
                             y_corr = beamdata['corr_Ycoord'][bcid]
 
                     #Apply extraconditions for the scanstep value
-                    ScanPointcondition = '({0} && scanstep == {1})*{2}'.format(condition,scan, betacorr )
+                    ScanPointcondition = '({0} && scanstep == {1})*{2}'.format(condition,scan,betacorr )
 
                     #Draw corrected vtx_y:vtx_x shifted by the mean values
                     draw2 = '(vtx_y+({4}/2))/{0}-{1}:(vtx_x+({5}/2))/{0}-{2}>>+{3}' \
@@ -253,6 +254,24 @@ def make_histograms(
         hists[name] = hist2
 
     return hists
+
+def make_histograms(
+    hists, mergehistname, nbins
+):
+    """Run over created trees and select Beam Imaging data for histograms merging all bcids together
+
+    hists: Dictionary of histograms to be used for histogram creation (key unused).
+    mergehistname: Name of the final histogram where all the histograms for each bcid are merged together
+    nbins: Number of bins in each dimension.
+    returns dictionary with histograms.
+    """
+
+    mergedhist = TH2F(mergehistname, mergehistname, nbins, -10.0, 10.0, nbins, -10.0, 10.0)
+    for i, hist in enumerate(hists.itervalues()):
+        name = hist.GetName()
+        if mergehistname in name:
+            mergedhist.Add(hist)
+    return mergedhist
 
 def make_vdmhistos(
     trees, nbins, mintrk, stepsize,

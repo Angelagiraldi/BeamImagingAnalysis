@@ -7,7 +7,7 @@ from sys import argv
 from ROOT import TChain, TH1F
 
 from lib.io import BareRootFile, NamedFloat, NamedString, Timestamp
-from lib.prepare import make_histograms, make_vdmhistos
+from lib.prepare import make_histograms, make_histograms_forbcid, make_vdmhistos
 
 def prepare_histograms(
     configfile, outputpath, suffix, nbins, mintrk, scaling=1.0, verbose=False,
@@ -62,13 +62,21 @@ def prepare_histograms(
                 scaling=scaling, crange=crange, verbose=verbose
             )
         else:
-            hists = make_histograms(
+            hists = make_histograms_forbcid(
                 trees, nbins, mintrk, scaling=scaling, verbose=verbose,
                 extracond=extracond, beamcorrectionsfile=beamcorrectionsfile, betacorrectionsfile=betacorrectionsfile
             )
+            mergehistname = 'Beam{0}Move{1}' \
+                       .format(sourcescan[scan][0], sourcescan[scan][1])
+            mergedhists = make_histograms(
+                hists, mergehistname, nbins
+            )
+            mergedhists.SetDirectory(0)
+            histograms.append(mergedhists)
         for hist in hists.itervalues():
             hist.SetDirectory(0)
             histograms.append(hist)
+
         if not singlepair or not scan.startswith('2'):
             condition = 'vtx_nTrk>={0}'.format(mintrk)
             errx = TH1F('errx', '', 100, 0.0, 0.03)

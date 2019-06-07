@@ -11,8 +11,8 @@ def selectbest(names, delete=False):
         prefix = prefix[:-1]
     morenames = [n[n.index('_', len(prefix)+1)+1:] for n in names]
     suffix = commonprefix(morenames)
-    if suffix[-1] == '_':
-        suffix = suffix[:-1]
+    #if suffix[-1] == '_':
+    #    suffix = suffix[:-1]
     while suffix[suffix.rfind('_')+1:].isdigit():
         suffix = suffix[:suffix.rfind('_')]
 
