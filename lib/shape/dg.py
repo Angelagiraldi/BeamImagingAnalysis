@@ -153,8 +153,8 @@ class DoubleGaussCore(SingleGaussCore):
         overlap = self.assign_overlap(overlap)
         return overlap
 
-class DoubleGaussFit(DoubleGaussCore):
-    """Double Gaussian beam shape, parametrized for fit.
+class notConstrainedDoubleGaussFit(DoubleGaussCore):
+    """Double Gaussian beam shape without any constrained on which gaussian should be wider, parametrized for fit.
 
     fit_parameters: List of names of fit parameters.
     __init__: Initialize.
@@ -184,6 +184,73 @@ class DoubleGaussFit(DoubleGaussCore):
             self._physics_parameters[nameA] = parA
             # Difference of narrow width to wide width
             nameC = '{0}Diff'.format(nameB)
+            parC = RealVar(nameC, -1.7, 1.7)
+            self._fit_parameters[nameC] = parC
+            # Wide width
+            formulaB = '{0}+{1}'.format(nameA, nameC)
+            arglistB = ArgList([nameA, nameC], self.parameter)
+            errorB = (
+                lambda a,c: lambda p:
+                (p(a).err(p)**2+p(c).err(p)**2)**0.5
+            )(nameA, nameC)
+            parB = FormulaVar(nameB, formulaB, arglistB, errorB)
+            self._physics_parameters[nameB] = parB
+        for name in ['rhoN1', 'rhoN2', 'rhoM1', 'rhoM2']:
+            # Correlation parameter
+            par = RealVar(name, -0.48, 0.48)
+            self._physics_parameters[name] = par
+        for nameA, nameB in [('w1N', 'w1M'), ('w2N', 'w2M')]:
+            # Weight of narrow component
+            parA = RealVar(nameA, 0.0, 1.0)
+            self._physics_parameters[nameA] = parA
+            # Weight of wide component
+            formulaB = '1.0-{0}'.format(nameA)
+            arglistB = ArgList([nameA], self.parameter)
+            errorB = (
+                lambda a: lambda p:
+                p(a).err(p)
+            )(nameA)
+            parB = FormulaVar(nameB, formulaB, arglistB, errorB)
+            self._physics_parameters[nameB] = parB
+
+    @staticmethod
+    def name():
+        """Return (unique) abbreviation of model name."""
+        return 'ncDG'
+
+
+class DoubleGaussFit(DoubleGaussCore):
+    """Double Gaussian beam shape, parametrized for fit.
+
+    fit_parameters: List of names of fit parameters.
+    __init__: Initialize.
+    name: Return model name.
+    """
+
+    fit_parameters = [
+        'xWidthN1', 'xWidthN2', 'yWidthN1', 'yWidthN2', 'rhoN1', 'rhoN2',
+        'xWidthM1Diff', 'xWidthM2Diff', 'yWidthM1Diff', 'yWidthM2Diff',
+        'rhoM1', 'rhoM2',
+        'w1N', 'w2N',
+        'x011', 'x012', 'x021', 'x022', 'y011', 'y012', 'y021', 'y022'
+    ]
+
+    def __init__(self, crange=(-10.0, 10.0)):
+        """Initialize double Gaussian beam shape.
+
+        crange: 2-tuple of limits of the coordinates.
+        """
+        DoubleGaussCore.__init__(self, crange)
+        for nameA, nameB in [
+            ('xWidthN1', 'xWidthM1'), ('xWidthN2', 'xWidthM2'),
+            ('yWidthN1', 'yWidthM1'), ('yWidthN2', 'yWidthM2')
+        ]:
+
+            # Narrow width
+            parA = RealVar(nameA, 1.3, 3.0)
+            self._physics_parameters[nameA] = parA
+            # Difference of narrow width to wide width
+            nameC = '{0}Diff'.format(nameB)
             parC = RealVar(nameC, 0.01, 1.7)
             self._fit_parameters[nameC] = parC
             # Wide width
@@ -195,6 +262,8 @@ class DoubleGaussFit(DoubleGaussCore):
             )(nameA, nameC)
             parB = FormulaVar(nameB, formulaB, arglistB, errorB)
             self._physics_parameters[nameB] = parB
+
+
         for name in ['rhoN1', 'rhoN2', 'rhoM1', 'rhoM2']:
             # Correlation parameter
             par = RealVar(name, -0.48, 0.48)

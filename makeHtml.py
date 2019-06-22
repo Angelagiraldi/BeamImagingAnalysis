@@ -11,7 +11,7 @@ from ROOT import gDirectory, TF1, TH1F
 from lib.io import RootFile
 from lib.plot.residual import CombinedResidualPlot, ResidualPlot
 from lib.plot.summary import ChiSquareSummary, CorrectionSummary
-from lib.shape.dg import DoubleGaussFit, SuperGaussFit
+from lib.shape.dg import DoubleGaussFit, notConstrainedDoubleGaussFit, SuperGaussFit
 from lib.shape.sg import SingleGauss, SingleGaussUncorrelated
 from lib.shape.tg import SuperDoubleGaussFit, TripleGaussFit
 
@@ -27,7 +27,8 @@ summary_fields = (
 )
 
 longnames = {
-    'SG': 'Single Gauss', 'DG': 'Double Gauss', 'TG': 'TripleGauss',
+    'SG': 'Single Gauss', 'DG': 'Double Gauss', 'ncDG':'not constrained Double Gauss',
+    'TG': 'TripleGauss',
     'SupG': 'Super Gauss', 'SupDG': 'Super Double Gauss',
     'noCorr': 'Uncorrelated'
 }
@@ -181,7 +182,7 @@ def make_plots(names, bcid, models, fill, version=1, wip=False):
         json = {
             'headline': prefix,
             'modelname': {
-                'SG': 'Single Gauss', 'DG': 'Double Gauss',
+                'SG': 'Single Gauss', 'DG': 'Double Gauss', 'ncDG': 'not constrained Double Gauss',
                 'TG': 'Triple Gauss', 'SupG': 'Super Gauss',
                 'SupDG': 'Super Double Gauss', 'noCorr': 'Uncorrelated'
             }[mod.name()],
@@ -378,7 +379,7 @@ def make_navigation(names, bcids, models, fill):
     with open('{0}/nav.json'.format(path), 'w') as f:
         dump(json, f, indent=4)
 
-fitmodels = ('noCorr', 'SG', 'DG', 'TG', 'SupG', 'SupDG')
+fitmodels = ('noCorr', 'SG', 'DG', 'ncDG', 'TG', 'SupG', 'SupDG')
 
 def main():
     if len(argv) < 2 or not argv[1] or not argv[1] in (
@@ -412,7 +413,7 @@ def main():
         models.append(model)
     names = [config['name'] for config in configs]
     models = [{
-        'SG': SingleGauss, 'DG': DoubleGaussFit, 'TG': TripleGaussFit,
+        'SG': SingleGauss, 'DG': DoubleGaussFit, 'ncDG': notConstrainedDoubleGaussFit, 'TG': TripleGaussFit,
         'SupG': SuperGaussFit, 'SupDG': SuperDoubleGaussFit,
         'noCorr': SingleGaussUncorrelated
     }[model] for model in models]
@@ -429,6 +430,7 @@ def main():
             len(argv)>j and argv[j] and argv[j].isdigit() and
             int(argv[j]) in range(len(configs[0]['bcids']))
         ):
+            print(configs[0]['bcids'])
             bcids.append(configs[0]['bcids'][int(argv[j])])
             j += 1
         if len(bcids) == 0:

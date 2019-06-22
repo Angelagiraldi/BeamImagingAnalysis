@@ -11,7 +11,8 @@ from lib.shape.dg import (
     DoubleGaussFit, DoubleGaussToy, SuperGaussFit, SuperGaussToy
 )
 from lib.shape.sg import SingleGauss
-from lib.shape.tg import SuperDoubleGaussFit, SuperDoubleGaussToy, TripleGaussToy
+from lib.shape.tg import TripleGaussFit, TripleGaussToy, SuperDoubleGaussFit, SuperDoubleGaussToy, TripleGaussToy
+
 
 def do_closureTest(
     suffix, toymodel, tempmodel, fitmodel, vtxresx, vtxresy=None,
@@ -190,7 +191,7 @@ def do_closureTest(
 
 def main():
     if len(argv) < 2 or not argv[1] or argv[1] not in [
-        'SupG', 'SupDG'
+        'SG', 'DG', 'TG', 'SupG', 'SupDG'
     ]:
         raise RuntimeError(
             'Specify 1st arugment: Toy model (SG, DG, TG, SupG, SupDG).'
@@ -200,9 +201,12 @@ def main():
         'SupG': SuperGaussToy, 'SupDG': SuperDoubleGaussToy
     }[argv[1]]()
     toymodel.factor = 100.0
-    if len(argv) < 3 or not argv[2] or argv[2] not in ['SupG', 'SupDG']:
+    if len(argv) < 3 or not argv[2] or argv[2] not in ['SG', 'DG', 'TG', 'SupG', 'SupDG']:
         raise RuntimeError('Specify 2nd argument: Fit model (SupG, SupDG).')
     fitmodel, tempmodel = {
+        'SG' : (SingleGauss, SingleGauss),
+        'DG' : (DoubleGaussFit, DoubleGaussFit),
+        'DG' : (TripleGaussFit, TripleGaussFit),
         'SupG': (SuperGaussFit, SingleGauss),
         'SupDG': (SuperDoubleGaussFit, DoubleGaussFit)
     }[argv[2]]
@@ -225,11 +229,21 @@ def main():
             raise RuntimeError('Optional 5th argument: Number of iterations.')
     else:
         n = 1
+    if len(argv) >= 7 and argv[6]:
+        try:
+            rootfile = argv[6]
+        except ValueError:
+            raise RuntimeError('Optional 6th argument: (Part of) name of ROOT file with fit results.')
+    else:
+        rootfile = None
 
-    def ateachtoy(toymodel, rand, jsonfile):
-        toymodel.load_json('res/shapes/{0}.json'.format(jsonfile), rand)
+    def ateachtoy(toymodel, rand, jsonfile=None, rootfile=None):
+        if rootfile:
+            toymodel.load_root('results/{0}.root'.format(rootfile))
+        elif jsonfile:
+            toymodel.load_json('res/shapes/{0}.json'.format(jsonfile), rand)
         return toymodel.overlap_func()
-    eachtoy = (lambda json: lambda toy, rand: ateachtoy(toy, rand, json))({
+    eachtoy = (lambda json: lambda toy, rand: ateachtoy(toy, rand, json,rootfile))({
         'SG': 'toySG', 'DG': 'toyDG', 'TG': 'toyTG', 'SupG': 'toySupG',
         'SupDG': 'toySupDG'
     }[argv[1]])

@@ -88,13 +88,25 @@ def fit_shape(
 
     hists = []
     with BareRootFile(datafile) as f:
-        for histname in [
-            'hist_Beam2MoveX_bunch{0}Add', 'hist_Beam2MoveY_bunch{0}Add',
-            'hist_Beam1MoveX_bunch{0}Add', 'hist_Beam1MoveY_bunch{0}Add'
-        ]:
-            hist = f.Get(histname.format(bcid))
-            hist.SetDirectory(0)
-            hists.append(hist)
+        if bcid == -1:
+            for histname in [
+                'Beam2MoveX', 'Beam2MoveY',
+                'Beam1MoveX', 'Beam1MoveY'
+            ]:
+                hist = f.Get(histname)
+                print(hist)
+                hist.SetDirectory(0)
+                hists.append(hist)
+            outputname = 'BeamImaging_v1_{0}_{1}_bcid{2}' \
+                         .format(name, model.name(), bcid)
+        else:
+            for histname in [
+                'hist_Beam2MoveX_bunch{0}Add', 'hist_Beam2MoveY_bunch{0}Add',
+                'hist_Beam1MoveX_bunch{0}Add', 'hist_Beam1MoveY_bunch{0}Add'
+            ]:
+                hist = f.Get(histname.format(bcid))
+                hist.SetDirectory(0)
+                hists.append(hist)
 
     fitmethod = lambda pdf, data: pdf.fitTo(
         data, RooFit.Save(), RooFit.PrintLevel(1), RooFit.Verbose(0)

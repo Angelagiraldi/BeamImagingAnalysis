@@ -9,7 +9,8 @@
     "datapath": "beamimaging",
     "heavyion": false,
     "bcids": [
-        41,
+        -1,
+	41,
         281,
         872,
         1783,

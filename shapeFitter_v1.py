@@ -118,7 +118,7 @@ def main():
         heavyion = False
         crange = (-10.0, 10.0)
     model = {
-        'SG': SingleGauss, 'DG': DoubleGaussFit, 'TG': TripleGaussFit,
+        'SG': SingleGauss, 'DG': DoubleGaussFit, 'DG': DoubleGaussFit,'TG': TripleGaussFit,
         'SupG': SuperGaussFit, 'SupDG': SuperDoubleGaussFit,
         'noCorr': SingleGaussUncorrelated
     }[argv[3]](crange=crange)

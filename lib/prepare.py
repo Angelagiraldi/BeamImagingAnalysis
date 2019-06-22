@@ -238,7 +238,7 @@ def make_histograms_forbcid(
                             y_corr = beamdata['corr_Ycoord'][bcid]
 
                     #Apply extraconditions for the scanstep value
-                    ScanPointcondition = '({0} && scanstep == {1})*{2}'.format(condition,scan,betacorr )
+                    ScanPointcondition = '({0} && scanstep == {1})*{2}'.format(condition,scan, betacorrections)
 
                     #Draw corrected vtx_y:vtx_x shifted by the mean values
                     draw2 = '(vtx_y+({4}/2))/{0}-{1}:(vtx_x+({5}/2))/{0}-{2}>>+{3}' \

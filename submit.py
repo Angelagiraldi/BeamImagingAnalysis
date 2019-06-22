@@ -4,7 +4,7 @@ from sys import argv
 
 from lib.submit import QSubmitter as submit
 
-ma = 'angirald@mail.desy.de'
+ma = 'angirald@desy.de'
 mo = False
 number = 20 #100
 test = False
@@ -111,7 +111,7 @@ for arg in argv[1:]:
                         mymo = False
                     numb = 100+i*number+j
                     args = [
-                        toy, fit, 'basic_{0}'.format(numb), str(0.7), str(n[i])
+                        toy, fit, 'basic_{0}'.format(numb), str(0.7), str(n[i]), str(0.7)
                     ]
                     names = ['cT', toy, fit, str(numb), version]
                     submit(
